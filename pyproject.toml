@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "commitphalanx"
+version = "0.1.0"
+description = "Autonomous Git Commit Synthesizer, PR Generator & Changelog Studio."
+readme = "README.md"
+authors = [{ name = "Scempyyy" }]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.scripts]
+commitphalanx = "commitphalanx.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["commitphalanx*"]

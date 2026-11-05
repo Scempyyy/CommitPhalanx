@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CommitPhalanx - Git Commit & PR Synthesizer Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            git: {
+              900: '#070b13',
+              800: '#0e1524',
+              700: '#172238',
+              border: '#1f2e4c',
+              cyan: '#06b6d4',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              orange: '#f97316'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-git-900 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-orange-500 selection:text-black">
+
+  <!-- Header -->
+  <header class="border-b border-git-border bg-git-800/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-bold text-lg text-white tracking-wide">COMMIT<span class="text-orange-400">PHALANX</span></h1>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">v0.1.0</span>
+          </div>
+          <p class="text-xs text-slate-400">Conventional Commit Synthesizer, PR Generator & Changelog Studio</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 text-xs font-mono">
+        <button onclick="setTab('commit')" id="tabBtn-commit" class="px-3 py-1 bg-git-700 text-white rounded font-medium border border-git-border">Commit</button>
+        <button onclick="setTab('pr')" id="tabBtn-pr" class="px-3 py-1 bg-git-900 text-slate-400 hover:text-white rounded font-medium border border-git-border">Pull Request</button>
+        <button onclick="setTab('changelog')" id="tabBtn-changelog" class="px-3 py-1 bg-git-900 text-slate-400 hover:text-white rounded font-medium border border-git-border">Changelog</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Split Studio -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+    <!-- Top Action Bar -->
+    <div class="bg-git-800 border border-git-border rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+          <span>Active Repository Status</span>
+          <span id="diffFilesCount" class="text-xs font-mono px-2 py-0.5 rounded bg-git-900 text-cyan-400 border border-git-border">0 Changed Files</span>
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">Scanned local working tree and staged index.</p>
+      </div>
+      <button onclick="refreshAll()" class="px-4 py-2 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-lg text-xs font-mono transition flex items-center space-x-1.5">
+        <span>⟳</span>
+        <span>Re-Analyze Diff</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: Conventional Commit View -->
+    <div id="tabContent-commit" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Generated Output -->
+      <div class="bg-git-800 border border-git-border rounded-xl p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-white text-sm">Synthesized Conventional Commit</h3>
+          <span id="commitTypeBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">FEAT</span>
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-mono text-slate-400">Commit Subject</label>
+          <div class="flex items-center space-x-2">
+            <input type="text" id="commitSubject" readonly class="flex-1 px-3 py-2 bg-git-900 border border-git-border rounded-lg text-xs font-mono text-white focus:outline-none" />
+            <button onclick="copyEl('commitSubject')" class="px-3 py-2 bg-git-700 hover:bg-orange-500 hover:text-black rounded text-xs font-mono text-slate-300 transition">Copy</button>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-mono text-slate-400">Full Commit Message (Subject + Body)</label>
+          <textarea id="commitFull" readonly rows="8" class="w-full p-3 bg-git-900 border border-git-border rounded-lg text-xs font-mono text-cyan-300 focus:outline-none resize-none"></textarea>
+          <button onclick="copyEl('commitFull')" class="w-full py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/40 rounded-lg text-xs font-mono transition font-semibold">Copy Full Commit Message</button>
+        </div>
+      </div>
+
+      <!-- Diff Inspector -->
+      <div class="bg-git-800 border border-git-border rounded-xl p-6 space-y-4">
+        <h3 class="font-bold text-white text-sm">Git Diff Preview</h3>
+        <pre id="diffPreview" class="p-4 bg-git-900 border border-git-border rounded-lg text-xs font-mono text-slate-300 overflow-y-auto max-h-[380px] whitespace-pre-wrap"></pre>
+      </div>
+    </div>
+
+    <!-- TAB 2: Pull Request Synthesizer -->
+    <div id="tabContent-pr" class="hidden bg-git-800 border border-git-border rounded-xl p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-white text-base">Pull Request Markdown Template</h3>
+        <button onclick="copyEl('prBody')" class="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-lg text-xs font-mono transition">Copy PR Markdown</button>
+      </div>
+      <div>
+        <label class="text-[11px] font-mono text-slate-400">PR Title</label>
+        <input type="text" id="prTitle" readonly class="w-full mt-1 px-3 py-2 bg-git-900 border border-git-border rounded-lg text-xs font-mono text-white focus:outline-none" />
+      </div>
+      <div>
+        <label class="text-[11px] font-mono text-slate-400">PR Body (Markdown)</label>
+        <textarea id="prBody" readonly rows="14" class="w-full mt-1 p-4 bg-git-900 border border-git-border rounded-lg text-xs font-mono text-slate-200 focus:outline-none resize-none"></textarea>
+      </div>
+    </div>
+
+    <!-- TAB 3: Changelog Generator -->
+    <div id="tabContent-changelog" class="hidden bg-git-800 border border-git-border rounded-xl p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-white text-base">Keep-a-Changelog Standard Output</h3>
+          <p class="text-xs text-slate-400">Auto-categorized by conventional commit prefixes from Git history.</p>
+        </div>
+        <button onclick="copyEl('changelogOut')" class="px-4 py-1.5 bg-orange-500 hover:bg-orange-400 text-black font-semibold rounded-lg text-xs font-mono transition">Copy CHANGELOG.md</button>
+      </div>
+      <textarea id="changelogOut" readonly rows="16" class="w-full p-4 bg-git-900 border border-git-border rounded-lg text-xs font-mono text-emerald-300 focus:outline-none resize-none"></textarea>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-git-border py-6 text-center text-xs text-slate-500 font-mono">
+    CommitPhalanx • Semantic Git Intelligence & Release Automation
+  </footer>
+
+  <script>
+    function setTab(tab) {
+      ['commit', 'pr', 'changelog'].forEach(t => {
+        document.getElementById(`tabContent-${t}`).classList.toggle('hidden', t !== tab);
+        document.getElementById(`tabBtn-${t}`).className = t === tab
+          ? 'px-3 py-1 bg-git-700 text-white rounded font-medium border border-git-border'
+          : 'px-3 py-1 bg-git-900 text-slate-400 hover:text-white rounded font-medium border border-git-border';
+      });
+    }
+
+    async function refreshAll() {
+      try {
+        const diffRes = await fetch('/api/diff');
+        const diffData = await diffRes.json();
+
+        document.getElementById('diffFilesCount').innerText = `${diffData.files.length} Changed Files`;
+        document.getElementById('diffPreview').innerText = diffData.diff || '(No uncommitted git diff detected)';
+
+        // Synthesize commit
+        const commitRes = await fetch('/api/synthesize/commit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ diff: diffData.diff, files: diffData.files })
+        });
+        const commitData = await commitRes.json();
+        document.getElementById('commitSubject').value = commitData.summary;
+        document.getElementById('commitFull').value = commitData.full_message;
+        document.getElementById('commitTypeBadge').innerText = commitData.type.toUpperCase();
+
+        // Synthesize PR
+        const prRes = await fetch('/api/synthesize/pr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ diff: diffData.diff, files: diffData.files, branch: 'main' })
+        });
+        const prData = await prRes.json();
+        document.getElementById('prTitle').value = prData.title;
+        document.getElementById('prBody').value = prData.body;
+
+        // Changelog
+        const clRes = await fetch('/api/changelog');
+        const clData = await clRes.json();
+        document.getElementById('changelogOut').value = clData.changelog;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function copyEl(id) {
+      const el = document.getElementById(id);
+      navigator.clipboard.writeText(el.value || el.innerText);
+      alert("Copied to clipboard!");
+    }
+
+    refreshAll();
+  </script>
+</body>
+</html>
